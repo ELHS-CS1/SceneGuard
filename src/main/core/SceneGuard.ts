@@ -27,18 +27,16 @@ export class SceneGuard {
 
   constructor(scene: Scene) {
     this._bridge = new SceneBridge(scene);
-    this._worker = new Worker(
-      new URL('../../worker/core/GuardedWorker.ts', import.meta.url),
-      { type: 'module' }
-    );
+    this._worker = new Worker(new URL('../../worker/core/GuardedWorker.ts', import.meta.url), {
+      type: 'module',
+    });
 
     this._worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
       const data = event.data;
-      
+
       if (data.type === 'error') {
         if (isScriptErrorMessage(data)) {
-          const handler = Array.from(this._messageHandlers.values())
-            .find(h => h.url === data.url);
+          const handler = Array.from(this._messageHandlers.values()).find(h => h.url === data.url);
           if (handler) {
             handler(event);
             return;
@@ -50,8 +48,7 @@ export class SceneGuard {
 
       if (data.type === 'scriptLoaded') {
         this._loadedScripts.add(data.url);
-        const handler = Array.from(this._messageHandlers.values())
-          .find(h => h.url === data.url);
+        const handler = Array.from(this._messageHandlers.values()).find(h => h.url === data.url);
         if (handler) {
           handler(event);
         }
@@ -98,7 +95,7 @@ export class SceneGuard {
     return new Promise<void>((resolve, reject) => {
       const handler: MessageHandler = (event: MessageEvent<WorkerMessage>) => {
         const data = event.data;
-        
+
         if (data.type === 'scriptLoaded' && data.url === url) {
           this._clearMessageHandler(url);
           resolve();

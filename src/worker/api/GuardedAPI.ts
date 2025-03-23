@@ -1,6 +1,11 @@
 // GuardedAPI.ts
 import { EntityHandle } from '../../shared/utils/EntityHandle';
-import type { MeshOptions, BehaviorConfig, ObservableType, ObservableValueType } from '../../shared/types/types';
+import type {
+  MeshOptions,
+  BehaviorConfig,
+  ObservableType,
+  ObservableValueType,
+} from '../../shared/types/types';
 
 export class GuardedAPI {
   private static _entityMap = new Map<string, EntityHandle>();
@@ -22,19 +27,26 @@ export class GuardedAPI {
   }
 
   static observe<T extends ObservableType>(
-    entity: EntityHandle, 
-    type: T, 
+    entity: EntityHandle,
+    type: T,
     callback: (data: ObservableValueType<T>) => void
   ): string {
     const observerId = crypto.randomUUID();
-    addEventListener('message', (event) => {
-      if (event.data.type === 'observable' && 
-          event.data.entityId === entity.id &&
-          event.data.observerId === observerId) {
+    addEventListener('message', event => {
+      if (
+        event.data.type === 'observable' &&
+        event.data.entityId === entity.id &&
+        event.data.observerId === observerId
+      ) {
         callback(event.data.value);
       }
     });
-    postMessage({ type: 'registerObserver', observerId, entityId: entity.id, observableType: type });
+    postMessage({
+      type: 'registerObserver',
+      observerId,
+      entityId: entity.id,
+      observableType: type,
+    });
     return observerId;
   }
 

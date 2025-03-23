@@ -22,7 +22,7 @@ function handleMessage(data: WorkerMessage): void {
         if (!validateScriptUrl(data.url)) {
           throw new Error('Invalid script URL');
         }
-        
+
         if (loadedScripts.has(data.url)) {
           console.warn(`Script ${data.url} is already loaded`);
           postMessage({ type: 'scriptLoaded', url: data.url });
@@ -59,12 +59,12 @@ function handleMessage(data: WorkerMessage): void {
         if (!entity) {
           throw new Error(`Entity ${entityId} not found`);
         }
-        GuardedAPI.observe(entity, observableType, (value) => {
+        GuardedAPI.observe(entity, observableType, value => {
           postMessage({
             type: 'observable',
             observerId,
             entityId,
-            value
+            value,
           });
         });
         break;
@@ -84,10 +84,10 @@ function handleMessage(data: WorkerMessage): void {
       }
     }
   } catch (error) {
-    postMessage({ 
-      type: 'error', 
+    postMessage({
+      type: 'error',
       error: error instanceof Error ? error.message : 'Unknown error',
-      source: data.type
+      source: data.type,
     });
   }
 }

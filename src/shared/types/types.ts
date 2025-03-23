@@ -33,10 +33,13 @@ export interface MoveBehaviorOptions {
 }
 
 export type BehaviorOptions = {
-  [K in BehaviorType]: K extends 'rotate' ? RotateBehaviorOptions :
-                       K extends 'scale' ? ScaleBehaviorOptions :
-                       K extends 'move' ? MoveBehaviorOptions :
-                       never;
+  [K in BehaviorType]: K extends 'rotate'
+    ? RotateBehaviorOptions
+    : K extends 'scale'
+      ? ScaleBehaviorOptions
+      : K extends 'move'
+        ? MoveBehaviorOptions
+        : never;
 };
 
 export interface BehaviorConfig<T extends BehaviorType = BehaviorType> {
@@ -53,16 +56,22 @@ export type EntityType = 'mesh' | 'light' | 'particleSystem' | 'model';
 
 export type ObservableType = 'position' | 'rotation' | 'scaling' | 'beforeRender';
 
-export type ObservableValueType<T extends ObservableType> = 
-  T extends 'beforeRender' ? Scene :
-  T extends 'position' | 'rotation' | 'scaling' ? Vector3 :
-  never;
+export type ObservableValueType<T extends ObservableType> = T extends 'beforeRender'
+  ? Scene
+  : T extends 'position' | 'rotation' | 'scaling'
+    ? Vector3
+    : never;
 
 // Message type definitions
-export type GuardedAPIMessageType = 
+export type GuardedAPIMessageType =
   | { type: 'createMesh'; id: string; options: MeshOptions }
   | { type: 'addBehavior'; entityId: string; behavior: BehaviorConfig }
-  | { type: 'registerObserver'; entityId: string; observerId: string; observableType: ObservableType };
+  | {
+      type: 'registerObserver';
+      entityId: string;
+      observerId: string;
+      observableType: ObservableType;
+    };
 
 export type ObservableMessage<T extends ObservableType> = {
   type: 'observable';
@@ -78,16 +87,18 @@ export interface ErrorMessage {
   url?: string; // Optional URL for script loading errors
 }
 
-export type ScriptMessage = {
-  type: 'scriptLoaded';
-  url: string;
-} | {
-  type: 'loadScript';
-  url: string;
-};
+export type ScriptMessage =
+  | {
+      type: 'scriptLoaded';
+      url: string;
+    }
+  | {
+      type: 'loadScript';
+      url: string;
+    };
 
-export type WorkerMessage = 
-  | GuardedAPIMessageType 
+export type WorkerMessage =
+  | GuardedAPIMessageType
   | ObservableMessage<ObservableType>
   | ErrorMessage
   | ScriptMessage;

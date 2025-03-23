@@ -1,14 +1,15 @@
 // SceneBridge.ts
-import { Scene, AbstractMesh, MeshBuilder, Observable, Vector3, Observer, TransformNode } from '@babylonjs/core';
-import type { 
-  BehaviorConfig, 
-  GuardedAPIMessageType, 
+import type { Scene, AbstractMesh, Vector3, Observer, TransformNode } from '@babylonjs/core';
+import { MeshBuilder, Observable } from '@babylonjs/core';
+import type {
+  BehaviorConfig,
+  GuardedAPIMessageType,
   GuardedAPIMethodMap,
   ObservableType,
   ObservableValueType,
   MessageHandler,
   BehaviorType,
-  WorkerMessage
+  WorkerMessage,
 } from '../../shared/types/types';
 import { BehaviorFactory } from './BehaviorFactory';
 
@@ -44,20 +45,20 @@ export class SceneBridge {
   private _matrixObservers = new Map<string, MatrixObserverInfo>();
 
   private readonly _messageHandlers: GuardedAPIMethodMap = {
-    createMesh: (message) => {
+    createMesh: message => {
       const mesh = MeshBuilder.CreateBox(message.id, message.options, this._scene);
       if (message.options.position) {
         mesh.position.copyFrom(message.options.position);
       }
       this._entities.set(message.id, mesh);
-      
+
       // Set up transformation tracking
       const observables: TransformObservables = {
         position: new Observable<Vector3>(),
         rotation: new Observable<Vector3>(),
-        scaling: new Observable<Vector3>()
+        scaling: new Observable<Vector3>(),
       };
-      
+
       const matrixObserver = mesh.onAfterWorldMatrixUpdateObservable.add(() => {
         observables.position.notifyObservers(mesh.position.clone());
         observables.rotation.notifyObservers(mesh.rotation.clone());
@@ -65,15 +66,18 @@ export class SceneBridge {
       });
 
       this._transformObservables.set(message.id, observables);
-      
+
       // Store the matrix update observer separately
       this._matrixObservers.set(message.id, {
         observer: matrixObserver,
-        entityId: message.id
+        entityId: message.id,
       });
     },
-    
-    addBehavior: <T extends BehaviorType>(message: { entityId: string; behavior: BehaviorConfig<T> }) => {
+
+    addBehavior: <T extends BehaviorType>(message: {
+      entityId: string;
+      behavior: BehaviorConfig<T>;
+    }) => {
       const entity = this._entities.get(message.entityId);
       if (!entity) {
         console.warn(`Entity ${message.entityId} not found for behavior addition`);
@@ -81,10 +85,10 @@ export class SceneBridge {
       }
       this._behaviorFactory.createBehavior(entity, message.behavior);
     },
-    
-    registerObserver: (message: { 
-      entityId: string; 
-      observerId: string; 
+
+    registerObserver: (message: {
+      entityId: string;
+      observerId: string;
       observableType: ObservableType;
     }) => {
       const entity = this._entities.get(message.entityId);
@@ -94,13 +98,13 @@ export class SceneBridge {
       }
 
       if (message.observableType === 'beforeRender') {
-        const observer = this._scene.onBeforeRenderObservable.add((scene) => {
+        const observer = this._scene.onBeforeRenderObservable.add(scene => {
           this._postObservableMessage(message.observerId, message.entityId, scene);
         });
-        
+
         this._observers.set(message.observerId, {
           observer,
-          type: 'beforeRender'
+          type: 'beforeRender',
         });
         return;
       }
@@ -112,16 +116,16 @@ export class SceneBridge {
       }
 
       const observable = transformObservables[message.observableType as TransformType];
-      const observer = observable.add((value) => {
+      const observer = observable.add(value => {
         this._postObservableMessage(message.observerId, message.entityId, value);
       });
 
       this._observers.set(message.observerId, {
         observer,
         entityId: message.entityId,
-        type: message.observableType as TransformType
+        type: message.observableType as TransformType,
       });
-    }
+    },
   };
 
   constructor(private _scene: Scene) {
@@ -137,7 +141,7 @@ export class SceneBridge {
       type: 'observable',
       observerId,
       entityId,
-      value
+      value,
     } satisfies WorkerMessage);
   }
 
@@ -158,7 +162,7 @@ export class SceneBridge {
     this._entities.clear();
 
     // Clean up observers
-    this._observers.forEach((info) => {
+    this._observers.forEach(info => {
       if (info.type === 'beforeRender') {
         this._scene.onBeforeRenderObservable.remove(info.observer);
       } else {
