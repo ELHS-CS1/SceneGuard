@@ -24,5 +24,9 @@ export default {
       lines: 80,
       statements: 80
     }
-  }
+  },
+  transformIgnorePatterns: [
+    "node_modules/(?!(@babylonjs)/)"
+  ],
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node']
 };
