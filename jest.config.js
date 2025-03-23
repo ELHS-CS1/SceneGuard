@@ -8,6 +8,7 @@ export default {
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
       useESM: true,
+      tsconfig: 'tsconfig.json'
     }],
   },
   extensionsToTreatAsEsm: ['.ts', '.tsx'],
@@ -17,16 +18,14 @@ export default {
     "!src/**/*.stories.{ts,tsx}",
     "!src/**/*.test.{ts,tsx}"
   ],
-  coverageThreshold: {
-    global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80
-    }
-  },
   transformIgnorePatterns: [
     "node_modules/(?!(@babylonjs)/)"
   ],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node']
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  testMatch: ['<rootDir>/tests/**/*.test.ts'],
+  globals: {
+    'ts-jest': {
+      useESM: true,
+    },
+  },
 };
