@@ -21,7 +21,7 @@ export default tseslint.config(
         'error',
         {
           selector: 'default',
-          format: ['camelCase'],
+          format: ['camelCase', 'PascalCase'],
         },
         {
           selector: 'variable',
@@ -43,6 +43,8 @@ export default tseslint.config(
           format: ['PascalCase'],
         },
       ],
+      '@typescript-eslint/no-namespace': 'off',
+      '@typescript-eslint/no-empty-interface': 'off',
     },
   },
 );
