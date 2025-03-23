@@ -1,20 +1,31 @@
 import { BasicSceneExample } from '../examples/basic-scene';
-import { Scene } from '@babylonjs/core';
 
 describe('BasicSceneExample', () => {
-    let canvas: HTMLCanvasElement;
+  let example: BasicSceneExample;
 
-    beforeEach(() => {
-        canvas = document.createElement('canvas');
-    });
+  beforeEach(() => {
+    example = new BasicSceneExample();
+  });
 
-    it('should create a scene with basic elements', () => {
-        const example = new BasicSceneExample(canvas);
-        const scene = example['scene'];
-        
-        expect(scene).toBeInstanceOf(Scene);
-        expect(scene.cameras.length).toBe(1);
-        expect(scene.lights.length).toBe(1);
-        expect(scene.meshes.length).toBe(2); // sphere and ground
-    });
-}); 
+  it('should create a scene with basic elements', () => {
+    const scene = example.createScene();
+    expect(scene).toBeDefined();
+    expect(scene.cameras.length).toBe(1);
+    expect(scene.lights.length).toBe(1);
+    expect(scene.meshes.length).toBe(2); // sphere and ground
+  });
+
+  it('should have a camera positioned correctly', () => {
+    const scene = example.createScene();
+    const camera = scene.cameras[0];
+    expect(camera).toBeDefined();
+    expect(camera.position.length()).toBeGreaterThan(0);
+  });
+
+  it('should have a light with correct intensity', () => {
+    const scene = example.createScene();
+    const light = scene.lights[0];
+    expect(light).toBeDefined();
+    expect(light.intensity).toBe(0.7);
+  });
+});

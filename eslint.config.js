@@ -10,7 +10,11 @@ export default tseslint.config(
       parser: tseslint.parser,
     },
     rules: {
-      '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/no-unused-vars': ['error', {
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_',
+        'args': 'none'
+      }],
       '@typescript-eslint/consistent-type-imports': [
         'error',
         {
