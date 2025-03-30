@@ -15,7 +15,11 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
-    "types": ["vite/client", "jest", "node"]
+    "types": ["vite/client", "jest", "node", "@babylonjs/core"],
+    "baseUrl": ".",
+    "paths": {
+      "srcRoot/*": ["src/*"]
+    }
   },
   "include": ["src", "tests", "examples"]
 }

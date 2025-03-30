@@ -1,3 +1,5 @@
 #!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-npm run pre-commit
+# Run lint-staged from the project root
+cd "$(dirname "$0")/.." && npm run pre-commit

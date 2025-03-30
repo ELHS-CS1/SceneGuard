@@ -1,3 +1,5 @@
 #!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
 
-npm run pre-push
+# Run tests from the project root
+cd "$(dirname "$0")/.." && npm run pre-push

@@ -1,15 +1,94 @@
 // types.ts
-import type { Scene, AbstractMesh, Behavior, Vector3 } from '@babylonjs/core';
+import type { AbstractMesh, Behavior, Scene, Vector3 } from '@babylonjs/core';
+import type { EntityHandle } from '../utils/EntityHandle';
 
-export interface MeshOptions {
+export interface IBaseMeshOptions {
+  position?: Vector3;
+}
+
+export interface IBoxMeshOptions extends IBaseMeshOptions {
+  type: 'box';
   size?: number;
   width?: number;
   height?: number;
   depth?: number;
-  position?: Vector3;
 }
 
-export interface ParticleOptions {
+export interface ISphereMeshOptions extends IBaseMeshOptions {
+  type: 'sphere';
+  diameter?: number;
+  segments?: number;
+}
+
+export interface ICylinderMeshOptions extends IBaseMeshOptions {
+  type: 'cylinder';
+  height?: number;
+  diameter?: number;
+  tessellation?: number;
+}
+
+export interface IGroundMeshOptions extends IBaseMeshOptions {
+  type: 'ground';
+  width?: number;
+  height?: number;
+  subdivisions?: number;
+}
+
+export interface IPlaneMeshOptions extends IBaseMeshOptions {
+  type: 'plane';
+  size?: number;
+  width?: number;
+  height?: number;
+  sideOrientation?: number;
+}
+
+export interface ITorusMeshOptions extends IBaseMeshOptions {
+  type: 'torus';
+  diameter?: number;
+  thickness?: number;
+  tessellation?: number;
+}
+
+export interface ITorusKnotMeshOptions extends IBaseMeshOptions {
+  type: 'torusKnot';
+  radius?: number;
+  tube?: number;
+  radialSegments?: number;
+  tubularSegments?: number;
+  p?: number;
+  q?: number;
+}
+
+export interface ITubeMeshOptions extends IBaseMeshOptions {
+  type: 'tube';
+  path: Vector3[];
+  radius?: number;
+  tessellation?: number;
+  radiusFunction?: (i: number, distance: number) => number;
+  cap?: number;
+}
+
+export type IMeshOptions =
+  | IBoxMeshOptions
+  | ISphereMeshOptions
+  | ICylinderMeshOptions
+  | IGroundMeshOptions
+  | IPlaneMeshOptions
+  | ITorusMeshOptions
+  | ITorusKnotMeshOptions
+  | ITubeMeshOptions;
+
+export interface ISerializedVector3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface ISerializedScene {
+  timestamp: number;
+}
+
+export interface IParticleOptions {
   capacity: number;
   textureUrl?: string;
   emitRate?: number;
@@ -17,37 +96,37 @@ export interface ParticleOptions {
 
 export type BehaviorType = 'rotate' | 'scale' | 'move';
 
-export interface RotateBehaviorOptions {
+export interface IRotateBehaviorOptions {
   axis: Vector3;
   speed: number;
 }
 
-export interface ScaleBehaviorOptions {
+export interface IScaleBehaviorOptions {
   target: Vector3;
   duration: number;
 }
 
-export interface MoveBehaviorOptions {
+export interface IMoveBehaviorOptions {
   target: Vector3;
   speed: number;
 }
 
-export type BehaviorOptions = {
+export type IBehaviorOptions = {
   [K in BehaviorType]: K extends 'rotate'
-    ? RotateBehaviorOptions
+    ? IRotateBehaviorOptions
     : K extends 'scale'
-      ? ScaleBehaviorOptions
+      ? IScaleBehaviorOptions
       : K extends 'move'
-        ? MoveBehaviorOptions
+        ? IMoveBehaviorOptions
         : never;
 };
 
-export interface BehaviorConfig<T extends BehaviorType = BehaviorType> {
+export interface IBehaviorConfig<T extends BehaviorType = BehaviorType> {
   type: T;
-  options: BehaviorOptions[T];
+  options: IBehaviorOptions[T];
 }
 
-export interface BabylonEntity<T extends AbstractMesh = AbstractMesh> {
+export interface IBabylonEntity<T extends AbstractMesh = AbstractMesh> {
   nativeObject: T;
   behaviors: Set<Behavior<T>>;
 }
@@ -62,25 +141,33 @@ export type ObservableValueType<T extends ObservableType> = T extends 'beforeRen
     ? Vector3
     : never;
 
+export type SerializedObservableValueType<T extends ObservableType> = T extends 'beforeRender'
+  ? ISerializedScene
+  : T extends 'position' | 'rotation' | 'scaling'
+    ? ISerializedVector3
+    : never;
+
 // Message type definitions
 export type GuardedAPIMessageType =
-  | { type: 'createMesh'; id: string; options: MeshOptions }
-  | { type: 'addBehavior'; entityId: string; behavior: BehaviorConfig }
+  | { type: 'createMesh'; id: string; options: IMeshOptions }
+  | { type: 'addBehavior'; entityId: string; behavior: IBehaviorConfig }
   | {
       type: 'registerObserver';
       entityId: string;
       observerId: string;
       observableType: ObservableType;
-    };
+    }
+  | { type: 'disposeEntity'; entityId: string }
+  | { type: 'unobserve'; observerId: string };
 
 export type ObservableMessage<T extends ObservableType> = {
   type: 'observable';
   observerId: string;
   entityId: string;
-  value: ObservableValueType<T>;
+  value: SerializedObservableValueType<T>;
 };
 
-export interface ErrorMessage {
+export interface IErrorMessage {
   type: 'error';
   error: string;
   source: string;
@@ -100,10 +187,24 @@ export type ScriptMessage =
 export type WorkerMessage =
   | GuardedAPIMessageType
   | ObservableMessage<ObservableType>
-  | ErrorMessage
+  | IErrorMessage
   | ScriptMessage;
 
 export type MessageHandler<T extends GuardedAPIMessageType> = (message: T) => void;
+
+// Type definition for the static GuardedAPI interface exposed globally in the worker
+export interface IGuardedAPIStatic {
+  createMesh(options: IMeshOptions): EntityHandle;
+  addBehavior(entity: EntityHandle, config: IBehaviorConfig): void;
+  observe<T extends ObservableType>(
+    entity: EntityHandle,
+    type: T,
+    callback: (data: SerializedObservableValueType<T>) => void
+  ): string;
+  disposeEntity(entity: EntityHandle): void;
+  unobserve(observerId: string): void;
+  getEntity?(id: string): EntityHandle | undefined;
+}
 
 export type GuardedAPIMethodMap = {
   [K in GuardedAPIMessageType['type']]: MessageHandler<Extract<GuardedAPIMessageType, { type: K }>>;

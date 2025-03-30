@@ -1,6 +1,6 @@
 // index.ts
-export { SceneGuard } from './main/core/SceneGuard';
 export { SceneBridge } from './main/core/SceneBridge';
-export { GuardedAPI } from './worker/api/GuardedAPI';
+export { SceneGuard } from './main/core/SceneGuard';
+export type { IBehaviorConfig, IMeshOptions, IParticleOptions } from './shared/types/types';
 export { EntityHandle } from './shared/utils/EntityHandle';
-export type { MeshOptions, ParticleOptions, BehaviorConfig } from './shared/types/types';
+export { GuardedAPI } from './worker/api/GuardedAPI';
