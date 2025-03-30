@@ -38,11 +38,62 @@ const sceneGuard = new SceneGuard(scene, engine);
 sceneGuard.loadScript('https://example.com/third-party-script.js');
 
 // In third-party-script.js
-GuardedAPI.createMesh({ size: 2 });
-GuardedAPI.observe(mesh, 'onBeforeRenderObservable', () => {
-  console.log('Mesh is about to render!');
+// Create a sphere
+const sphereHandle = GuardedAPI.createMesh({
+  type: 'sphere',
+  diameter: 2,
+  segments: 32,
+  position: new Vector3(0, 1, 0),
 });
+
+// Add a rotation behavior
+GuardedAPI.addBehavior(sphereHandle, {
+  type: 'rotate',
+  options: {
+    axis: new Vector3(0, 1, 0),
+    speed: 0.5,
+  },
+});
+
+// Observe the sphere's rotation
+const observerId = GuardedAPI.observe(sphereHandle, 'rotation', data => {
+  console.log(`Rotation: x=${data.x}, y=${data.y}, z=${data.z}`);
+});
+
+// Clean up when done
+GuardedAPI.unobserve(observerId);
+GuardedAPI.disposeEntity(sphereHandle);
 ```
+
+## Available Mesh Types
+
+SceneGuard supports the following mesh types:
+
+- `box`: Create a box with size or width/height/depth
+- `sphere`: Create a sphere with diameter and segments
+- `cylinder`: Create a cylinder with height, diameter, and tessellation
+- `ground`: Create a ground plane with width, height, and subdivisions
+- `plane`: Create a plane with size or width/height
+- `torus`: Create a torus with diameter, thickness, and tessellation
+- `torusKnot`: Create a torus knot with radius, tube, and segments
+- `tube`: Create a tube along a path with radius and tessellation
+
+## Available Behaviors
+
+SceneGuard provides the following behaviors:
+
+- `rotate`: Rotate an entity around a specified axis
+- `scale`: Scale an entity to a target size
+- `move`: Move an entity to a target position
+
+## Observable Types
+
+You can observe the following properties of entities:
+
+- `position`: Track position changes
+- `rotation`: Track rotation changes
+- `scaling`: Track scaling changes
+- `beforeRender`: Track scene render events
 
 ## Contributing
 
@@ -61,4 +112,4 @@ Please ensure your code follows the existing style and includes appropriate test
 
 SceneGuard is released under the MIT License. See the LICENSE file for details.
 
-----
+---
