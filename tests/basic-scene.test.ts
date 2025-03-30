@@ -1,3 +1,28 @@
+import type {
+  IBehaviorConfig,
+  IMeshOptions,
+  ObservableType,
+  SerializedObservableValueType,
+} from '../src/shared/types/types';
+import type { EntityHandle } from '../src/shared/utils/EntityHandle';
+
+// Mock GuardedAPI
+declare global {
+  interface Window {
+    GuardedAPI: {
+      createMesh(options: IMeshOptions): EntityHandle;
+      addBehavior(entity: EntityHandle, config: IBehaviorConfig): void;
+      observe<T extends ObservableType>(
+        entity: EntityHandle,
+        type: T,
+        callback: (data: SerializedObservableValueType<T>) => void
+      ): string;
+      disposeEntity(entity: EntityHandle): void;
+      unobserve(observerId: string): void;
+    };
+  }
+}
+
 // Set up the mock before importing the example
 const mockGuardedAPI = {
   createMesh: jest.fn().mockImplementation((options: IMeshOptions): EntityHandle => {
@@ -24,31 +49,8 @@ afterAll(() => {
   });
 });
 
+// Now import the example after setting up the mock
 import { BasicSceneExample } from '../examples/basic-scene';
-import type {
-  IBehaviorConfig,
-  IMeshOptions,
-  ObservableType,
-  SerializedObservableValueType,
-} from '../src/shared/types/types';
-import type { EntityHandle } from '../src/shared/utils/EntityHandle';
-
-// Mock GuardedAPI
-declare global {
-  interface Window {
-    GuardedAPI: {
-      createMesh(options: IMeshOptions): EntityHandle;
-      addBehavior(entity: EntityHandle, config: IBehaviorConfig): void;
-      observe<T extends ObservableType>(
-        entity: EntityHandle,
-        type: T,
-        callback: (data: SerializedObservableValueType<T>) => void
-      ): string;
-      disposeEntity(entity: EntityHandle): void;
-      unobserve(observerId: string): void;
-    };
-  }
-}
 
 jest.mock('@babylonjs/core', () => {
   class MockVector3 {
