@@ -36,8 +36,6 @@
       "source.fixAll.eslint": "explicit"
     }
   },
-  "eslint.validate": [
-    "typescript",
-    "typescriptreact"
-  ]
+  "eslint.validate": ["typescript", "typescriptreact"],
+  "cSpell.words": ["babylonjs"]
 }

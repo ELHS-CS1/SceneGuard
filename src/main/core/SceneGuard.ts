@@ -1,27 +1,27 @@
 // SceneGuard.ts
 import type { Scene } from '@babylonjs/core';
+import type { GuardedAPIMessageType, IErrorMessage, WorkerMessage } from '../../shared/types/types';
 import { SceneBridge } from './SceneBridge';
-import type { WorkerMessage, GuardedAPIMessageType, ErrorMessage } from '../../shared/types/types';
 
-interface MessageHandler {
+interface IMessageHandler {
   (event: MessageEvent<WorkerMessage>): void;
   timeoutId?: number;
   url: string;
 }
 
-interface ScriptErrorMessage extends ErrorMessage {
+interface IScriptErrorMessage extends IErrorMessage {
   source: 'loadScript';
   url: string;
 }
 
-function isScriptErrorMessage(message: ErrorMessage): message is ScriptErrorMessage {
+function isScriptErrorMessage(message: IErrorMessage): message is IScriptErrorMessage {
   return message.source === 'loadScript' && 'url' in message;
 }
 
 export class SceneGuard {
   private _worker: Worker;
   private _bridge: SceneBridge;
-  private _messageHandlers = new Map<string, MessageHandler>();
+  private _messageHandlers = new Map<string, IMessageHandler>();
   private _loadedScripts = new Set<string>();
   private _isDisposed = false;
 
@@ -42,7 +42,7 @@ export class SceneGuard {
             return;
           }
         }
-        console.error(`SceneGuard error (${data.source}):`, data.error);
+        console.error(`[SceneGuard Worker Error] (${data.source}):`, data.error);
         return;
       }
 
@@ -61,12 +61,14 @@ export class SceneGuard {
     };
 
     this._worker.onerror = (error: ErrorEvent) => {
-      console.error('SceneGuard worker error:', error.message);
+      console.error('[SceneGuard Worker onerror]:', error.message, error.filename, error.lineno);
     };
   }
 
   private _isGuardedAPIMessage(message: WorkerMessage): message is GuardedAPIMessageType {
-    return ['createMesh', 'addBehavior', 'registerObserver'].includes(message.type);
+    return ['createMesh', 'addBehavior', 'registerObserver', 'disposeEntity', 'unobserve'].includes(
+      message.type
+    );
   }
 
   private _clearMessageHandler(url: string): void {
@@ -93,7 +95,7 @@ export class SceneGuard {
     this._clearMessageHandler(url);
 
     return new Promise<void>((resolve, reject) => {
-      const handler: MessageHandler = (event: MessageEvent<WorkerMessage>) => {
+      const handler: IMessageHandler = (event: MessageEvent<WorkerMessage>) => {
         const data = event.data;
 
         if (data.type === 'scriptLoaded' && data.url === url) {
@@ -101,13 +103,13 @@ export class SceneGuard {
           resolve();
         } else if (data.type === 'error' && isScriptErrorMessage(data) && data.url === url) {
           this._clearMessageHandler(url);
-          reject(new Error(data.error));
+          reject(new Error(`Worker script load failed: ${data.error}`));
         }
       };
 
       handler.timeoutId = window.setTimeout(() => {
         this._clearMessageHandler(url);
-        reject(new Error('Script loading timeout'));
+        reject(new Error(`Worker script loading timed out: ${url}`));
       }, 30000);
 
       handler.url = url;

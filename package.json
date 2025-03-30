@@ -27,12 +27,13 @@
     "pre-commit": "lint-staged && npm run type-check",
     "pre-push": "npm run test:ci",
     "validate": "npm-run-all --parallel type-check lint:fix test:ci",
-    "update-deps": "npm update --save/save-dev && npm outdated"
+    "update-deps": "npm update --save/save-dev && npm outdated",
+    "example": "vite"
   },
   "dependencies": {
-    "@babylonjs/core": "^7.54.0",
-    "@babylonjs/gui": "^7.54.0",
-    "@babylonjs/loaders": "^7.54.0"
+    "@babylonjs/core": "^8.0.1",
+    "@babylonjs/gui": "^8.0.1",
+    "@babylonjs/loaders": "^8.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.23.0",
