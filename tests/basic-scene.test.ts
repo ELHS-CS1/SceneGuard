@@ -1,3 +1,29 @@
+// Set up the mock before importing the example
+const mockGuardedAPI = {
+  createMesh: jest.fn().mockImplementation((options: IMeshOptions): EntityHandle => {
+    return { id: 'mock-' + options.type } as EntityHandle;
+  }),
+  addBehavior: jest.fn(),
+  observe: jest.fn().mockReturnValue('mock-observer-id'),
+  disposeEntity: jest.fn(),
+  unobserve: jest.fn(),
+};
+
+// Set up the mock before tests
+beforeAll(() => {
+  Object.defineProperty(global, 'GuardedAPI', {
+    value: mockGuardedAPI,
+    writable: true,
+  });
+});
+
+// Clean up after tests
+afterAll(() => {
+  Object.defineProperty(global, 'GuardedAPI', {
+    value: undefined,
+  });
+});
+
 import { BasicSceneExample } from '../examples/basic-scene';
 import type {
   IBehaviorConfig,
@@ -23,27 +49,6 @@ declare global {
     };
   }
 }
-
-// Mock implementation of GuardedAPI
-const mockGuardedAPI = {
-  createMesh: jest.fn().mockImplementation((options: IMeshOptions): EntityHandle => {
-    return { id: 'mock-' + options.type } as EntityHandle;
-  }),
-  addBehavior: jest.fn(),
-  observe: jest.fn().mockReturnValue('mock-observer-id'),
-  disposeEntity: jest.fn(),
-  unobserve: jest.fn(),
-};
-
-// Set up the mock before tests
-beforeAll(() => {
-  (global as unknown as { GuardedAPI: typeof mockGuardedAPI }).GuardedAPI = mockGuardedAPI;
-});
-
-// Clean up after tests
-afterAll(() => {
-  delete (global as unknown as { GuardedAPI?: typeof mockGuardedAPI }).GuardedAPI;
-});
 
 jest.mock('@babylonjs/core', () => {
   class MockVector3 {
