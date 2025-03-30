@@ -34,19 +34,19 @@ const mockGuardedAPI = {
   unobserve: jest.fn(),
 };
 
-// Set up the mock before tests
-beforeAll(() => {
-  Object.defineProperty(global, 'GuardedAPI', {
-    value: mockGuardedAPI,
-    writable: true,
-  });
+// Mock the global GuardedAPI
+jest.mock('../examples/basic-scene', () => {
+  // Set up the mock before loading the module
+  (global as unknown as { GuardedAPI: typeof mockGuardedAPI }).GuardedAPI = mockGuardedAPI;
+
+  // Now import and return the actual module
+  const module = jest.requireActual('../examples/basic-scene');
+  return module;
 });
 
 // Clean up after tests
 afterAll(() => {
-  Object.defineProperty(global, 'GuardedAPI', {
-    value: undefined,
-  });
+  delete (global as unknown as { GuardedAPI?: typeof mockGuardedAPI }).GuardedAPI;
 });
 
 // Now import the example after setting up the mock
