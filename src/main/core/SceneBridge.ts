@@ -9,7 +9,11 @@ import type {
   IErrorMessage,
   IGroundMeshOptions,
   IMeshOptions,
+  IMoveBehaviorOptions,
   IPlaneMeshOptions,
+  IRotateBehaviorOptions,
+  IScaleBehaviorOptions,
+  ISerializedVector3,
   ISphereMeshOptions,
   ITorusKnotMeshOptions,
   ITorusMeshOptions,
@@ -142,7 +146,7 @@ export class SceneBridge {
 
       // Set position if provided
       if (options.position) {
-        mesh.position = options.position;
+        mesh.position = this._createVector3(options.position);
       }
 
       // Store mesh and setup transformation tracking
@@ -175,11 +179,42 @@ export class SceneBridge {
   ): void {
     const entity = this._entities.get(message.entityId);
     if (!entity) {
-      console.warn(`[SceneBridge] Entity ${message.entityId} not found for behavior addition`);
+      console.warn(`[SceneBridge] Entity not found for ID: ${message.entityId}`);
       return;
     }
-    // Pass the behavior config (already correctly typed via GuardedAPIMessageType)
-    this._behaviorFactory.createBehavior(entity, message.behavior);
+
+    const config = message.behavior;
+    switch (config.type) {
+      case 'rotate': {
+        const options = config.options as IRotateBehaviorOptions;
+        const axis = this._createVector3(options.axis);
+        this._behaviorFactory.createBehavior(entity, {
+          type: 'rotate',
+          options: { speed: options.speed, axis },
+        });
+        break;
+      }
+      case 'scale': {
+        const options = config.options as IScaleBehaviorOptions;
+        const target = this._createVector3(options.target);
+        this._behaviorFactory.createBehavior(entity, {
+          type: 'scale',
+          options: { duration: options.duration, target },
+        });
+        break;
+      }
+      case 'move': {
+        const options = config.options as IMoveBehaviorOptions;
+        const target = this._createVector3(options.target);
+        this._behaviorFactory.createBehavior(entity, {
+          type: 'move',
+          options: { speed: options.speed, target },
+        });
+        break;
+      }
+      default:
+        console.warn(`[SceneBridge] Unknown behavior type: ${config.type}`);
+    }
   }
 
   /**
@@ -599,10 +634,14 @@ export class SceneBridge {
     if (!options.path || options.path.length < 2) {
       throw new Error('Tube requires a path with at least 2 points');
     }
+
+    // Convert path points to Vector3
+    const vector3Path = options.path.map(point => this._createVector3(point));
+
     return MeshBuilder.CreateTube(
       id,
       {
-        path: options.path,
+        path: vector3Path,
         radius: options.radius ?? 0.5,
         tessellation: options.tessellation ?? 16,
         radiusFunction: options.radiusFunction,
@@ -647,5 +686,15 @@ export class SceneBridge {
       default:
         return false;
     }
+  }
+
+  // Helper method to create Vector3 instances from serialized vectors
+  private _createVector3(
+    vector: Vector3 | { x: number; y: number; z: number } | ISerializedVector3
+  ): Vector3 {
+    if (vector instanceof Vector3) {
+      return vector;
+    }
+    return new Vector3(vector.x, vector.y, vector.z);
   }
 }

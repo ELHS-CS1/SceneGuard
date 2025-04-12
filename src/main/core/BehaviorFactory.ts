@@ -8,10 +8,20 @@ import type {
   IMoveBehaviorOptions,
   IRotateBehaviorOptions,
   IScaleBehaviorOptions,
+  ISerializedVector3,
 } from '../../shared/types/types';
+
+// Helper function to convert ISerializedVector3 to Vector3
+function toVector3(vector: Vector3 | ISerializedVector3): Vector3 {
+  if (vector instanceof Vector3) {
+    return vector;
+  }
+  return new Vector3(vector.x, vector.y, vector.z);
+}
 
 class RotateBehavior implements Behavior<AbstractMesh> {
   private _scene: Scene;
+  private _axis: Vector3;
   public name = 'RotateBehavior';
 
   constructor(
@@ -19,6 +29,7 @@ class RotateBehavior implements Behavior<AbstractMesh> {
     private _options: IRotateBehaviorOptions
   ) {
     this._scene = scene;
+    this._axis = toVector3(_options.axis);
   }
 
   init(): void {}
@@ -26,7 +37,7 @@ class RotateBehavior implements Behavior<AbstractMesh> {
   attach(target: AbstractMesh): void {
     this._scene.onBeforeRenderObservable.add(() => {
       target.rotate(
-        this._options.axis,
+        this._axis,
         (this._options.speed * this._scene.getEngine().getDeltaTime()) / 1000
       );
     });
@@ -39,6 +50,7 @@ class ScaleBehavior implements Behavior<AbstractMesh> {
   private _scene: Scene;
   private _startTime = 0;
   private _initialScale: Vector3 | null = null;
+  private _target: Vector3;
   public name = 'ScaleBehavior';
 
   constructor(
@@ -46,6 +58,7 @@ class ScaleBehavior implements Behavior<AbstractMesh> {
     private _options: IScaleBehaviorOptions
   ) {
     this._scene = scene;
+    this._target = toVector3(_options.target);
   }
 
   init(): void {}
@@ -60,7 +73,7 @@ class ScaleBehavior implements Behavior<AbstractMesh> {
         (Date.now() - this._startTime) / (this._options.duration * 1000),
         1
       );
-      const scale = Vector3.Lerp(this._initialScale, this._options.target, progress);
+      const scale = Vector3.Lerp(this._initialScale, this._target, progress);
       target.scaling = scale;
     });
   }
@@ -72,6 +85,7 @@ class ScaleBehavior implements Behavior<AbstractMesh> {
 
 class MoveBehavior implements Behavior<AbstractMesh> {
   private _scene: Scene;
+  private _target: Vector3;
   public name = 'MoveBehavior';
 
   constructor(
@@ -79,13 +93,14 @@ class MoveBehavior implements Behavior<AbstractMesh> {
     private _options: IMoveBehaviorOptions
   ) {
     this._scene = scene;
+    this._target = toVector3(_options.target);
   }
 
   init(): void {}
 
   attach(target: AbstractMesh): void {
     this._scene.onBeforeRenderObservable.add(() => {
-      const direction = this._options.target.subtract(target.position).normalize();
+      const direction = this._target.subtract(target.position).normalize();
       const distance = (this._options.speed * this._scene.getEngine().getDeltaTime()) / 1000;
       target.position.addInPlace(direction.scale(distance));
     });
