@@ -61,7 +61,10 @@ export class BasicSceneExample {
     this._sceneGuard = new SceneGuard(this._scene);
 
     // Create a worker script file
-    this._workerScriptUrl = new URL('./example.worker.ts', import.meta.url).href;
+    this._workerScriptUrl =
+      typeof import.meta !== 'undefined' && import.meta.url
+        ? new URL('./example.worker.ts', import.meta.url).href
+        : './example.worker.ts';
 
     // Load the worker script
     this._sceneGuard.loadScript(this._workerScriptUrl).catch(error => {
