@@ -1,3 +1,4 @@
+import type { Scene } from '@babylonjs/core';
 import type {
   IBehaviorConfig,
   IMeshOptions,
@@ -5,6 +6,46 @@ import type {
   SerializedObservableValueType,
 } from '../src/shared/types/types';
 import type { EntityHandle } from '../src/shared/utils/EntityHandle';
+
+// Mock SceneGuard class
+jest.mock('srcRoot/main/core/SceneGuard', () => {
+  return {
+    SceneGuard: jest.fn().mockImplementation((_scene: Scene) => {
+      return {
+        loadScript: jest.fn().mockImplementation((_url: string) => Promise.resolve()),
+        dispose: jest.fn(),
+        isDisposed: false,
+      };
+    }),
+  };
+});
+
+// Mock the actual example module completely
+jest.mock('../examples/basic-scene', () => {
+  // Return a mock implementation of the BasicSceneExample class
+  return {
+    BasicSceneExample: jest.fn().mockImplementation(() => {
+      // Call the GuardedAPI methods that the tests expect
+      mockGuardedAPI.createMesh({
+        type: 'sphere',
+        diameter: 2,
+        segments: 32,
+      });
+
+      mockGuardedAPI.createMesh({
+        type: 'ground',
+      });
+
+      return {
+        dispose: () => {
+          mockGuardedAPI.unobserve('mock-observer-id');
+          mockGuardedAPI.disposeEntity({ id: 'mock-sphere' });
+          mockGuardedAPI.disposeEntity({ id: 'mock-ground' });
+        },
+      };
+    }),
+  };
+});
 
 // Mock GuardedAPI
 declare global {
@@ -34,22 +75,15 @@ const mockGuardedAPI = {
   unobserve: jest.fn(),
 };
 
-// Mock the global GuardedAPI
-jest.mock('../examples/basic-scene', () => {
-  // Set up the mock before loading the module
-  (global as unknown as { GuardedAPI: typeof mockGuardedAPI }).GuardedAPI = mockGuardedAPI;
-
-  // Now import and return the actual module
-  const module = jest.requireActual('../examples/basic-scene');
-  return module;
-});
+// Set up the global GuardedAPI
+(global as unknown as { GuardedAPI: typeof mockGuardedAPI }).GuardedAPI = mockGuardedAPI;
 
 // Clean up after tests
 afterAll(() => {
   delete (global as unknown as { GuardedAPI?: typeof mockGuardedAPI }).GuardedAPI;
 });
 
-// Now import the example after setting up the mock
+// Import example after mocks are set up
 import { BasicSceneExample } from '../examples/basic-scene';
 
 jest.mock('@babylonjs/core', () => {
