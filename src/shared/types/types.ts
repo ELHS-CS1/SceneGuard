@@ -3,7 +3,7 @@ import type { AbstractMesh, Behavior, Scene, Vector3 } from '@babylonjs/core';
 import type { EntityHandle } from '../utils/EntityHandle';
 
 export interface IBaseMeshOptions {
-  position?: Vector3;
+  position?: Vector3 | ISerializedVector3;
 }
 
 export interface IBoxMeshOptions extends IBaseMeshOptions {
@@ -61,7 +61,7 @@ export interface ITorusKnotMeshOptions extends IBaseMeshOptions {
 
 export interface ITubeMeshOptions extends IBaseMeshOptions {
   type: 'tube';
-  path: Vector3[];
+  path: (Vector3 | ISerializedVector3)[];
   radius?: number;
   tessellation?: number;
   radiusFunction?: (i: number, distance: number) => number;
@@ -97,17 +97,17 @@ export interface IParticleOptions {
 export type BehaviorType = 'rotate' | 'scale' | 'move';
 
 export interface IRotateBehaviorOptions {
-  axis: Vector3;
+  axis: Vector3 | ISerializedVector3;
   speed: number;
 }
 
 export interface IScaleBehaviorOptions {
-  target: Vector3;
+  target: Vector3 | ISerializedVector3;
   duration: number;
 }
 
 export interface IMoveBehaviorOptions {
-  target: Vector3;
+  target: Vector3 | ISerializedVector3;
   speed: number;
 }
 

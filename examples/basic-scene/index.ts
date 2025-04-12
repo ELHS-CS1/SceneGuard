@@ -1,164 +1,98 @@
 // Remove the CSS import as it's invalid in a worker context
 // import './style.css';
 // Import types and Vector3 ONLY
-import { Vector3 } from '@babylonjs/core';
-import type {
-  IBehaviorConfig,
-  IMeshOptions,
-  ObservableType,
-  SerializedObservableValueType,
-} from 'srcRoot/shared/types/types';
-// Import EntityHandle from its specific path
-import type { EntityHandle } from 'srcRoot/shared/utils/EntityHandle';
+import {
+  ArcRotateCamera,
+  Color3,
+  Color4,
+  DirectionalLight,
+  Engine,
+  HemisphericLight,
+  Scene,
+  Vector3,
+} from '@babylonjs/core';
+import { SceneGuard } from 'srcRoot/main/core/SceneGuard';
 // Path adjusted assuming /examples and /src are siblings
 // TODO: Change this import to use the package name (e.g., 'sceneguard') once the library build process is set up.
-
-// --- Type definition for the globally injected API --- //
-interface GuardedAPIType {
-  createMesh(options: IMeshOptions): EntityHandle;
-  addBehavior(entity: EntityHandle, config: IBehaviorConfig): void;
-  observe<T extends ObservableType>(
-    entity: EntityHandle,
-    type: T,
-    callback: (data: SerializedObservableValueType<T>) => void
-  ): string;
-  disposeEntity(entity: EntityHandle): void;
-  unobserve(observerId: string): void;
-}
-
-declare const GuardedAPI: GuardedAPIType;
-// --- End Type definition --- //
 
 console.log('[Main] Basic Scene Example Initializing...');
 
 export class BasicSceneExample {
-  private _sphereHandle: EntityHandle | null = null;
-  private _boxHandle: EntityHandle | null = null;
-  private _rotationObserverId: string | null = null;
+  private _canvas: HTMLCanvasElement;
+  private _engine: Engine;
+  private _scene: Scene;
+  private _sceneGuard: SceneGuard;
+  private _workerScriptUrl: string;
 
   constructor() {
-    this._setupScene();
+    // Initialize Babylon.js
+    this._canvas = document.getElementById('renderCanvas') as HTMLCanvasElement;
+    this._engine = new Engine(this._canvas);
+    this._scene = new Scene(this._engine);
+
+    // Set up scene
+    this._scene.clearColor = new Color4(0.1, 0.1, 0.1, 1.0); // Dark gray background
+    this._scene.ambientColor = new Color3(0.3, 0.3, 0.3); // Ambient light color
+
+    // Set up camera
+    const camera = new ArcRotateCamera(
+      'camera',
+      -Math.PI / 2,
+      Math.PI / 2.5,
+      10,
+      Vector3.Zero(),
+      this._scene
+    );
+    camera.attachControl(this._canvas, true);
+    camera.wheelPrecision = 50;
+    camera.lowerRadiusLimit = 5; // Prevent zooming too close
+    camera.upperRadiusLimit = 20; // Prevent zooming too far
+
+    // Set up lighting
+    const hemisphericLight = new HemisphericLight('hemiLight', new Vector3(0, 1, 0), this._scene);
+    hemisphericLight.intensity = 0.7;
+    hemisphericLight.groundColor = new Color3(0.2, 0.2, 0.2);
+
+    const directionalLight = new DirectionalLight('dirLight', new Vector3(-1, -2, -1), this._scene);
+    directionalLight.intensity = 0.5;
+    directionalLight.position = new Vector3(20, 40, 20);
+
+    // Initialize SceneGuard
+    this._sceneGuard = new SceneGuard(this._scene);
+
+    // Create a worker script file
+    this._workerScriptUrl =
+      typeof import.meta !== 'undefined' && import.meta.url
+        ? new URL('./example.worker.ts', import.meta.url).href
+        : './example.worker.ts';
+
+    // Load the worker script
+    this._sceneGuard.loadScript(this._workerScriptUrl).catch(error => {
+      console.error('[Main] Failed to load worker script:', error);
+    });
+
+    // Start the render loop
+    this._engine.runRenderLoop(() => {
+      this._scene.render();
+    });
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      this._engine.resize();
+    });
+
+    // Basic error handling
+    window.addEventListener('error', event => {
+      console.error('[Main] SCRIPT ERROR:', event.message, event.filename, event.lineno);
+    });
   }
 
-  private _setupScene(): void {
-    console.log('[Main] Setting up scene elements...');
-
-    // Create a sphere
-    console.log('[Main] Creating sphere...');
-    this._sphereHandle = GuardedAPI.createMesh({
-      type: 'sphere',
-      diameter: 2,
-      segments: 32,
-      position: new Vector3(0, 1, 0),
-    });
-    // Check handle BEFORE accessing id
-    if (this._sphereHandle) {
-      console.log('[Main] Sphere created with handle:', this._sphereHandle.id);
-    } else {
-      console.error('[Main] Failed to create sphere handle.');
-    }
-
-    // Create a box
-    console.log('[Main] Creating box...');
-    this._boxHandle = GuardedAPI.createMesh({
-      type: 'box',
-      size: 1,
-      position: new Vector3(-3, 0.5, 0),
-    });
-    // Check handle BEFORE accessing id
-    if (this._boxHandle) {
-      console.log('[Main] Box created with handle:', this._boxHandle.id);
-    } else {
-      console.error('[Main] Failed to create box handle.');
-    }
-
-    // Create the ground
-    console.log('[Main] Creating ground...');
-    const groundHandle = GuardedAPI.createMesh({
-      type: 'ground',
-      width: 10,
-      height: 10,
-      subdivisions: 10,
-      position: new Vector3(0, -0.01, 0),
-    });
-    // Check handle BEFORE accessing id
-    if (groundHandle) {
-      console.log('[Main] Ground created with handle:', groundHandle.id);
-    } else {
-      console.error('[Main] Failed to create ground handle.');
-    }
-
-    // Add rotation behavior to the sphere
-    if (this._sphereHandle) {
-      console.log('[Main] Adding rotate behavior to sphere...');
-      GuardedAPI.addBehavior(this._sphereHandle, {
-        type: 'rotate',
-        options: {
-          axis: new Vector3(0, 1, 0),
-          speed: 0.5,
-        },
-      });
-    }
-
-    // Observe the sphere's rotation
-    if (this._sphereHandle) {
-      console.log('[Main] Observing sphere rotation...');
-      // Explicitly tell observe we expect 'rotation' data
-      this._rotationObserverId = GuardedAPI.observe(this._sphereHandle, 'rotation', data => {
-        // TypeScript now infers `data` is SerializedVector3 based on 'rotation' and GuardedAPIType
-        console.log(
-          `[Main] Sphere Rotation Update: x=${data.x.toFixed(2)}, y=${data.y.toFixed(2)}, z=${data.z.toFixed(2)}`
-        );
-      });
-      console.log('[Main] Rotation observer registered with ID:', this._rotationObserverId);
-    }
-
-    console.log('[Main] Scene setup complete.');
-  }
-
-  public dispose(): void {
-    console.log('[Main] Cleaning up scene elements...');
-
-    // 1. Unregister observers
-    if (this._rotationObserverId) {
-      console.log(`[Main] Unregistering observer: ${this._rotationObserverId}`);
-      GuardedAPI.unobserve(this._rotationObserverId);
-      this._rotationObserverId = null;
-    }
-
-    // 2. Dispose entities
-    if (this._sphereHandle) {
-      console.log(`[Main] Disposing entity: ${this._sphereHandle.id}`);
-      GuardedAPI.disposeEntity(this._sphereHandle);
-      this._sphereHandle = null;
-    }
-    if (this._boxHandle) {
-      console.log(`[Main] Disposing entity: ${this._boxHandle.id}`);
-      GuardedAPI.disposeEntity(this._boxHandle);
-      this._boxHandle = null;
-    }
-    // Note: Ground handle was local to _setupScene, so not disposed here.
-    // If we needed to dispose it, its handle should be stored globally like sphere/box.
-
-    console.log('[Main] Scene cleanup complete.');
+  dispose(): void {
+    // Clean up resources
+    this._sceneGuard.dispose();
+    this._engine.dispose();
   }
 }
 
 // Create an instance of the example
-const example = new BasicSceneExample();
-
-// Schedule cleanup after 10 seconds
-const cleanupTimeout = 10000;
-console.log(`[Main] Scheduling cleanup in ${cleanupTimeout / 1000} seconds...`);
-setTimeout(() => {
-  example.dispose();
-}, cleanupTimeout);
-
-// Basic error handling within the worker
-self.addEventListener('messageerror', event => {
-  console.error('[Main] MESSAGE ERROR:', event);
-});
-
-self.addEventListener('error', event => {
-  console.error('[Main] SCRIPT ERROR:', event.message, event.filename, event.lineno);
-});
+new BasicSceneExample();
